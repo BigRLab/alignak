@@ -461,7 +461,7 @@ class Arbiter(Daemon):  # pylint: disable=R0902
         # Some errors like a realm with hosts and no schedulers for it may imply to run new daemons
         if self.conf.missing_daemons:
             logger.info("Trying to handle the missing daemons...")
-            if not self.manage_missing_daemons():
+            if not self.start_missing_daemons():
                 err = "Some detected as missing daemons did not started correctly. " \
                       "Sorry, I bail out"
                 logger.error(err)
@@ -500,8 +500,8 @@ class Arbiter(Daemon):  # pylint: disable=R0902
         # Display found warnings and errors
         self.conf.show_errors()
 
-    def manage_missing_daemons(self):
-        """Manage the list of detected missing daemons
+    def start_missing_daemons(self):
+        """Manage the list of detected missing daemons and start the daemons
 
          If the daemon does not in exist `my_satellites`, then:
           - prepare daemon start arguments (port, name and log file)
@@ -546,14 +546,47 @@ class Arbiter(Daemon):  # pylint: disable=R0902
                 ret = self.my_satellites[daemon_name].poll()
                 if ret is not None:
                     logger.error("*** %s exited on start!", daemon_name)
-                    for line in iter(self.my_satellites[daemon_name].stdout.readline, b''):
-                        logger.error(">>> " + line.rstrip())
-                    for line in iter(self.my_satellites[daemon_name].stderr.readline, b''):
-                        logger.error(">>> " + line.rstrip())
+                    if self.my_satellites[daemon_name].stdout:
+                        for line in iter(self.my_satellites[daemon_name].stdout.readline, b''):
+                            logger.error(">>> " + line.rstrip())
+                    if self.my_satellites[daemon_name].stderr:
+                        for line in iter(self.my_satellites[daemon_name].stderr.readline, b''):
+                            logger.error(">>> " + line.rstrip())
                     result = False
                 else:
                     logger.info("%s running (pid=%d)",
                                 daemon_name, self.my_satellites[daemon_name].pid)
+        return result
+
+    def stop_missing_daemons(self):
+        """Stop the detected as missing daemons
+
+         If the daemon is started, then:
+          - stop the daemon
+          - make sure it stopped correctly
+
+        :return: True if all daemons are stopped, else False
+        """
+        result = True
+        # Parse the list of the missing daemons and try to run the corresponding processes
+        satellites = [self.conf.schedulers, self.conf.pollers, self.conf.brokers]
+        self.my_satellites = {}
+        for daemon_name, daemon in self.my_satellites:
+            logger.info("Trying to stop daemon: %s...", daemon_name)
+
+            ret = daemon.poll()
+            if ret is not None:
+                logger.error("*** %s already stopped!", daemon_name)
+                if self.my_satellites[daemon_name].stdout:
+                    for line in iter(self.my_satellites[daemon_name].stdout.readline, b''):
+                        logger.error(">>> " + line.rstrip())
+                if self.my_satellites[daemon_name].stderr:
+                    for line in iter(self.my_satellites[daemon_name].stderr.readline, b''):
+                        logger.error(">>> " + line.rstrip())
+                result = False
+            else:
+                logger.info("%s running (pid=%d)",
+                            daemon_name, daemon.pid)
         return result
 
     def load_modules_configuration_objects(self, raw_objects):  # pragma: no cover,
@@ -783,6 +816,9 @@ class Arbiter(Daemon):  # pylint: disable=R0902
         if self.must_run and not self.interrupted:
             # Main loop
             self.run()
+
+        if self.interrupted:
+            self.stop_missing_daemons()
 
     def wait_for_master_death(self):
         """Wait for a master timeout and take the lead if necessary

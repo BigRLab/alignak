@@ -37,9 +37,10 @@ except ImportError:
     from queue import Queue, Empty  # python 3.x
 
 def enqueue_output(out, queue):
-    for line in iter(out.readline, b''):
-        queue.put(line)
-    out.close()
+    if out:
+        for line in iter(out.readline, b''):
+            queue.put(line)
+        out.close()
 
 
 class TestDaemonsSingleInstance(AlignakTest):
@@ -198,7 +199,7 @@ class TestDaemonsSingleInstance(AlignakTest):
             print("%s terminated" % (name))
         print("Stopping daemons duration: %d seconds" % (time.time() - start))
 
-    def run_and_check_alignak_daemons(self, cfg_folder, runtime=10, hosts_count=10):
+    def run_and_check_alignak_daemons(self, cfg_folder, runtime=10, hosts_count=10, daemons=None):
         """Start and stop the Alignak daemons
 
         Let the daemons run for the number of seconds defined in the runtime parameter and
@@ -222,6 +223,8 @@ class TestDaemonsSingleInstance(AlignakTest):
 
         self.procs = []
         daemons_list = ['poller', 'reactionner', 'receiver', 'broker', 'scheduler']
+        if daemons:
+            daemons_list = daemons
 
         print("Cleaning pid and log files...")
         for daemon in ['arbiter'] + daemons_list:
@@ -456,3 +459,18 @@ class TestDaemonsSingleInstance(AlignakTest):
         self.prepare_alignak_configuration(cfg_folder, hosts_count)
         errors_raised = self.run_and_check_alignak_daemons(cfg_folder, 600, hosts_count)
         assert errors_raised == 0
+
+    def test_multi_realms_daemons_10_host_5mn(self):
+        """Run Alignak with 10 hosts during 5 minutes - multi realms"""
+
+        cfg_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                  './cfg/multi-realms')
+        hosts_count = 10
+        self.prepare_alignak_configuration(cfg_folder, hosts_count)
+        daemons = ['poller', 'poller-extra',
+                   'reactionner', 'receiver',
+                   'broker', 'broker-extra',
+                   'scheduler', 'scheduler-extra']
+        errors_raised = self.run_and_check_alignak_daemons(cfg_folder, 300, hosts_count, daemons)
+        assert errors_raised == 0
+

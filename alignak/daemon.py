@@ -586,6 +586,7 @@ class Daemon(object):
             raise SystemExit("valid pidfile exists (pid=%s) and not forced to replace. Exiting."
                              % pid)
 
+        logger.info("Replacing previous instance %d" % pid)
         self.debug_output.append("Replacing previous instance %d" % pid)
         try:
             pgid = os.getpgid(pid)
