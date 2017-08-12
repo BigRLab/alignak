@@ -569,7 +569,6 @@ class Arbiter(Daemon):  # pylint: disable=R0902
         """
         result = True
         # Parse the list of the missing daemons and try to run the corresponding processes
-        satellites = [self.conf.schedulers, self.conf.pollers, self.conf.brokers]
         self.my_satellites = {}
         for daemon_name, daemon in self.my_satellites:
             logger.info("Trying to stop daemon: %s...", daemon_name)
