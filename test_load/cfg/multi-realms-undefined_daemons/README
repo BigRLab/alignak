@@ -10,3 +10,6 @@
 # one, thus the default initial state
 # -----
 # Three more daemons are defined for the realm Extra and one host exist in this realm
+# Those daemons are not defined in the configuration files and the arbiter detects they are missing
+# and then it starts the missing daemons by itself.
+

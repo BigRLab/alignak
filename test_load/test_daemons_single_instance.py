@@ -474,3 +474,17 @@ class TestDaemonsSingleInstance(AlignakTest):
         errors_raised = self.run_and_check_alignak_daemons(cfg_folder, 300, hosts_count, daemons)
         assert errors_raised == 0
 
+    def test_multi_realms_undefined_daemons_10_host_5mn(self):
+        """Run Alignak with 10 hosts during 5 minutes - multi realms but missing daemons"""
+
+        cfg_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                  './cfg/multi-realms-undefined_daemons')
+        hosts_count = 10
+        self.prepare_alignak_configuration(cfg_folder, hosts_count)
+        daemons = ['poller',
+                   'reactionner', 'receiver',
+                   'broker',
+                   'scheduler']
+        errors_raised = self.run_and_check_alignak_daemons(cfg_folder, 30, hosts_count, daemons)
+        assert errors_raised == 0
+
