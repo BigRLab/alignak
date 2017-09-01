@@ -535,7 +535,8 @@ class ExternalCommandManager:
         if self.mode == 'applyer' and self.conf.log_external_commands:
             make_a_log = True
             # #912: only log an external command if it is not a passive check
-            if self.conf.log_passive_checks and res['c_name'] in ['process_host_check_result', 'process_service_check_result']:
+            if self.conf.log_passive_checks and res['c_name'] in ['process_host_check_result',
+                                                                  'process_service_check_result']:
                 # Do not log the command
                 make_a_log = False
 
